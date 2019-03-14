@@ -1,95 +1,65 @@
 package com.android.testapp;
 
-import android.content.Context;
-import android.graphics.Color;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.Toast;
+import android.util.Log;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.util.List;
 
-import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 public class MainActivity extends AppCompatActivity {
 
-    @OnClick(R.id.btn_write)
-    public void writeFile() {
-        save();
-    }
-
-    private void save() {
-        FileOutputStream fos;
-        BufferedWriter bw = null;
-        try {
-            fos = openFileOutput("test", Context.MODE_PRIVATE);
-            bw = new BufferedWriter(new OutputStreamWriter(fos));
-            bw.write("just fucking test!");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (bw != null) {
-                    bw.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @BindView(R.id.btn_read)
-    Button btn_read;
-
-    @OnClick(R.id.btn_read)
-    public void readFile() {
-        String sb = load();
-        Toast.makeText(this, sb, Toast.LENGTH_SHORT).show();
-    }
-
-    @NonNull
-    private String load() {
-        FileInputStream fis;
-        BufferedReader br = null;
-
-        StringBuilder sb = new StringBuilder();
-
-        try {
-            fis = openFileInput("test");
-            br = new BufferedReader(new InputStreamReader(fis));
-            String line = "";
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (br != null) {
-                    br.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return sb.toString();
-    }
+    private static final String TAG = "TA-MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+    }
 
-        btn_read.setTextColor(Color.RED);
+    @OnClick(R.id.btn_get_weather)
+    public void getWeather() {
+        API api = RetrofitUtils.getInstance().getApiService(Constants.BASE_URL, API.class);
+
+        Call<Weather> call = api.getCityWeather("北京");
+        call.enqueue(new Callback<Weather>() {
+            @Override
+            public void onResponse(Call<Weather> call, Response<Weather> response) {
+
+                Weather.DataBean weather = response.body().getData();
+                Weather.DataBean.YesterdayBean yesterdayBeans = response.body().getData().getYesterday();
+                List<Weather.DataBean.ForecastBean> forecastBean = response.body().getData().getForecast();
+
+
+                Log.i(TAG, "日期: " + yesterdayBeans.getDate());
+                Log.i(TAG, "温差: " + yesterdayBeans.getHigh() + ", " + yesterdayBeans.getLow());
+                Log.i(TAG, "风向: " + yesterdayBeans.getFx());
+                Log.i(TAG, "环境: " + yesterdayBeans.getType());
+                Log.i(TAG, "温度: " + weather.getWendu());
+                Log.i(TAG, "建议: " + weather.getGanmao());
+                Log.i(TAG, "----------------------------------");
+
+                for (Weather.DataBean.ForecastBean future : forecastBean) {
+                    Log.i(TAG, "日期: " + future.getDate());
+                    Log.i(TAG, "温差: " + future.getHigh() + ", " + future.getLow());
+                    Log.i(TAG, "风向: " + future.getFengxiang());
+                    Log.i(TAG, "环境: " + future.getType());
+                    Log.i(TAG, "----------------------------------");
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<Weather> call, Throwable t) {
+
+            }
+        });
     }
 }
