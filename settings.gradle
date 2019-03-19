@@ -1,1 +1,1 @@
-include ':app', ':runtimepermissiontest'
+include ':app', ':runtimepermissiontest', ':notificationtest'
